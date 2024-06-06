@@ -1,10 +1,5 @@
 #pragma once
 
-constexpr auto CLOCKS_PER_BEAT = 24;        // 1/4 note
-constexpr auto CLOCKS_PER_HALF_BEAT = 12;   // 1/8 note
-constexpr auto CLOCKS_PER_QUARTER_BEAT = 6; // 1/16 note
-constexpr auto CLOCKS_PER_EIGHTH_BEAT = 3;  // 1/32 note
-
 enum class MIDICin : uint8_t
 {
     note_off = 0x80,
@@ -67,39 +62,4 @@ constexpr const char *get_midi_cin_name(MIDICin cin)
     }
 
     return "unknown";
-}
-
-struct MIDIPacket
-{
-    MIDICin cin;
-    uint8_t cable;
-    uint8_t data0;
-    uint8_t data1;
-};
-
-MIDIPacket process_midi_packet(uint8_t packet[4])
-{
-    if (packet[1] < 0xF0)
-    {
-        return MIDIPacket{
-            .cin = static_cast<MIDICin>(packet[1] & 0xF0),
-            .cable = static_cast<uint8_t>(packet[1] & 0x0F),
-            .data0 = packet[2],
-            .data1 = packet[3],
-        };
-    }
-    return MIDIPacket{
-        .cin = static_cast<MIDICin>(packet[1]),
-        .data0 = packet[2],
-        .data1 = packet[3],
-    };
-}
-
-uint16_t combine_14b(uint8_t first, uint8_t second)
-{
-    uint16_t result;
-    result = second;
-    result <<= 7;
-    result |= first;
-    return result;
 }

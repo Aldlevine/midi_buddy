@@ -1,83 +1,31 @@
-#include "blink.hpp"
-#include "midi.hpp"
-#include "event.hpp"
+#include "channel_displays/channel_displays.hpp"
+#include "concurrent/concurrent.hpp"
+#include "display/display.hpp"
+#include "messages/messages.hpp"
+#include "midi/midi.hpp"
+#include "note_tracker/note_tracker.hpp"
 
-#include "pico/stdlib.h"
 #include "bsp/board.h"
+#include "hardware/i2c.h"
+#include "pico/stdlib.h"
+#include "pico/multicore.h"
 
 #include <stdio.h>
 
-constexpr auto LED_PIN = 16;
+auto midi_receiver = MIDIReceiver{};
+auto note_tracker = NoteTracker{midi_receiver.get_note_mq(), 2};
 
-auto blinker = Blinker<LED_PIN, 100>{};
+auto display_manager = DisplayManager{};
+auto clock_channel_display = ClockChannelDisplay{midi_receiver.get_clock_mq()};
+auto note_channel_display = NoteChannelDisplay{note_tracker};
+auto debug_channel_display = DebugChannelDisplay{};
 
-void midi_task()
+void secondary_main()
 {
-    uint8_t packet[4];
-    MIDIPacket midi_packet;
-
-    static uint8_t beat_clock_count = 0;
-    static bool is_playing = false;
-
-    while (tud_midi_available())
+    while (true)
     {
-        tud_midi_packet_read(packet);
-        midi_packet = process_midi_packet(packet);
-
-        if (midi_packet.cin == MIDICin::rt_start)
-        {
-            beat_clock_count = 0;
-            is_playing = true;
-            printf("MIDI START\n");
-            continue;
-        }
-
-        if (midi_packet.cin == MIDICin::rt_continue)
-        {
-            is_playing = true;
-            printf("MIDI CONTINUE\n");
-            continue;
-        }
-
-        if (midi_packet.cin == MIDICin::rt_stop)
-        {
-            is_playing = false;
-            printf("MIDI STOP\n");
-            continue;
-        }
-
-        if (midi_packet.cin == MIDICin::rt_clock)
-        {
-            if (is_playing && beat_clock_count == 0)
-            {
-                blinker.blink();
-                printf("BEAT\n");
-            }
-
-            beat_clock_count = (beat_clock_count + 1) % CLOCKS_PER_BEAT; // clocks_per_beat
-            continue;
-        }
-
-        if (midi_packet.cin == MIDICin::sys_song_position)
-        {
-            uint16_t song_position = combine_14b(midi_packet.data0, midi_packet.data1);
-            beat_clock_count = (song_position * CLOCKS_PER_QUARTER_BEAT) % CLOCKS_PER_BEAT;
-            printf("SONG POSITION: %d\n", song_position);
-            continue;
-        }
+        display_manager.task();
     }
-}
-
-Event<32> test_event{};
-
-void handle_event()
-{
-    printf("Handle Event!\n");
-}
-
-void handle_event_2()
-{
-    printf("Handle Event 2!\n");
 }
 
 int main()
@@ -88,16 +36,19 @@ int main()
     tusb_init();
     tud_init(BOARD_TUD_RHPORT);
 
-    blinker.init();
+    display_manager.init();
+    display_manager.set_channel(0, &note_channel_display);
+    display_manager.set_channel(1, &debug_channel_display);
+    display_manager.set_channel(3, &clock_channel_display);
 
-    test_event.connect(handle_event);
-    test_event.connect(handle_event_2);
-    test_event.emit();
+    midi_receiver.init();
+
+    multicore_launch_core1(secondary_main);
 
     while (true)
     {
         tud_task();
-        midi_task();
-        blinker.task();
+        midi_receiver.task();
+        note_tracker.task();
     }
 }

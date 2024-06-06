@@ -39,6 +39,8 @@ endif()
 
 project(analog_buddy C CXX ASM)
 
+add_subdirectory(vendor/pico-ssd1306)
+
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
@@ -63,6 +65,9 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 
 # Add the standard library to the build
 target_link_libraries(${PROJECT_NAME}
+  hardware_i2c
+  pico_multicore
+  pico_ssd1306
   pico_stdlib
   pico_unique_id
   tinyusb_device
@@ -72,6 +77,7 @@ target_link_libraries(${PROJECT_NAME}
 # Add the standard include files to the build
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/src
+  ${CMAKE_CURRENT_LIST_DIR}/vendor
   # ${CMAKE_CURRENT_LIST_DIR}/.. # for our common lwipopts or any other standard includes, if required
 )
 
