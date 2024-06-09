@@ -4,8 +4,6 @@
 #include "messages/messages.hpp"
 #include "midi/midi.hpp"
 
-// #include "pico-ssd1306/shapeRenderer/ShapeRenderer.h"
-
 class ClockChannelDisplay : public virtual ChannelDisplay
 {
     MessageConsumer<ClockMessage> clock_mc;
@@ -18,7 +16,6 @@ public:
     {
     }
 
-    // void draw_channel(uint8_t channel, pico_ssd1306::SSD1306 &ssd1306) override
     void draw_channel(uint8_t channel, DisplayOutput &output) override
     {
         {
@@ -33,17 +30,11 @@ public:
 
         if (clock_mod < 4)
         {
-            // fill_rect(ssd1306, cx_mid - 4, 8, cx_mid + 4, 16);
             output.fill_rect(cx_mid - 4, 8, cx_mid + 4, 16);
         }
         else if (clock_mod < 8)
         {
             uint8_t y_mid = 12;
-            // fill_rect(ssd1306, cx_mid - 4, y_mid - 4, cx_mid - 2, y_mid - 2);
-            // fill_rect(ssd1306, cx_mid + 2, y_mid - 4, cx_mid + 4, y_mid - 2);
-            // fill_rect(ssd1306, cx_mid + 2, y_mid + 2, cx_mid + 4, y_mid + 4);
-            // fill_rect(ssd1306, cx_mid - 4, y_mid + 2, cx_mid - 2, y_mid + 4);
-
             output.fill_rect(cx_mid - 4, y_mid - 4, cx_mid - 2, y_mid - 2);
             output.fill_rect(cx_mid + 2, y_mid - 4, cx_mid + 4, y_mid - 2);
             output.fill_rect(cx_mid + 2, y_mid + 2, cx_mid + 4, y_mid + 4);
@@ -54,8 +45,6 @@ public:
         {
             uint8_t clock_y = 11 + 48 - clock_mod * 2;
             uint8_t clock_y_end = clock_y + 2;
-
-            // fill_rect(ssd1306, cx_mid - 1, clock_y, cx_mid + 1, clock_y_end);
             output.fill_rect(cx_mid - 1, clock_y, cx_mid + 1, clock_y_end);
         }
     }

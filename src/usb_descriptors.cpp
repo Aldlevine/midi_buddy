@@ -78,7 +78,7 @@ char serial[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1];
 constexpr const char *string_desc_array[]{
     (const char[]){0x09, 0x04}, // 0: English (0x0409)
     "XneyZnek",                 // 1: Manufacturer
-    "Analog Buddy",             // 2: Product
+    "MIDI Buddy",               // 2: Product
     serial,                     // 3: Serial use flash id
 };
 

@@ -8,7 +8,7 @@
 
 #include <array>
 
-#define MESSAGE_QUEUE_SIZE 128
+#define MESSAGE_QUEUE_SIZE 256
 #define MAX_CONSUMER_COUNT 16
 
 template <typename Data>
@@ -56,61 +56,5 @@ public:
     Data operator[](size_t index) const
     {
         return buffer[index];
-    }
-};
-
-template <typename Data>
-class MessageConsumer
-{
-    MessageQueue<Data> &message_queue;
-    Data *index;
-
-public:
-    MessageConsumer(MessageQueue<Data> &message_queue)
-        : message_queue{message_queue}, index{message_queue.head()}
-    {
-    }
-
-    LockGuard lock_guard()
-    {
-        return message_queue.lock_guard();
-    }
-
-    bool has_messages()
-    {
-
-        return index != message_queue.head();
-    }
-
-    bool get_message(Data *message)
-    {
-        if (has_messages())
-        {
-            *message = *index;
-            if (++index == message_queue.end())
-            {
-                index = message_queue.begin();
-            }
-            return true;
-        }
-        return false;
-    }
-
-    bool get_last_message(Data *message)
-    {
-        if (has_messages())
-        {
-            index = message_queue.head();
-            if (index == message_queue.begin())
-            {
-                *message = *(message_queue.end() - 1);
-            }
-            else
-            {
-                *message = *(index - 1);
-            }
-            return true;
-        }
-        return false;
     }
 };

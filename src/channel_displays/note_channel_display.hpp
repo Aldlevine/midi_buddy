@@ -31,7 +31,6 @@ public:
     {
     }
 
-    // void draw_channel(uint8_t channel, pico_ssd1306::SSD1306 &ssd1306) override
     void draw_channel(uint8_t channel, DisplayOutput &output) override
     {
         bool audible = true;
@@ -124,6 +123,6 @@ public:
     void fill_key(DisplayOutput output, uint8_t channel, uint8_t key, bool audible)
     {
         auto rect = get_key_rect(channel, key);
-        output.fill_rect(rect.x_min, rect.y_min, rect.x_max, rect.y_max, audible ? 0 : 12);
+        output.fill_rect(rect.x_min, rect.y_min, rect.x_max, rect.y_max, audible ? 0 : 8);
     }
 };

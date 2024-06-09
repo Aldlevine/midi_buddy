@@ -18,7 +18,9 @@ auto note_tracker = NoteTracker{midi_receiver.get_note_mq(), 2};
 auto display_manager = DisplayManager{};
 auto clock_channel_display = ClockChannelDisplay{midi_receiver.get_clock_mq()};
 auto note_channel_display = NoteChannelDisplay{note_tracker};
-auto debug_channel_display = DebugChannelDisplay{};
+auto signal_channel_display = SignalChannelDisplay{};
+auto midi_cc_channel_display = MIDICCChannelDisplay{midi_receiver.get_control_mq(), 1};
+// auto debug_channel_display = DebugChannelDisplay{};
 
 void secondary_main()
 {
@@ -38,7 +40,8 @@ int main()
 
     display_manager.init();
     display_manager.set_channel(0, &note_channel_display);
-    display_manager.set_channel(1, &debug_channel_display);
+    display_manager.set_channel(1, &midi_cc_channel_display);
+    display_manager.set_channel(2, &signal_channel_display);
     display_manager.set_channel(3, &clock_channel_display);
 
     midi_receiver.init();

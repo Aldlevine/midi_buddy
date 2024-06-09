@@ -17,6 +17,7 @@ class MIDIReceiver
 
     MessageQueue<ClockMessage> clock_mq;
     MessageQueue<NoteMessage> note_mq;
+    MessageQueue<ControlMessage> control_mq;
 
 public:
     MessageQueue<ClockMessage> &get_clock_mq()
@@ -29,10 +30,16 @@ public:
         return note_mq;
     }
 
+    MessageQueue<ControlMessage> &get_control_mq()
+    {
+        return control_mq;
+    }
+
     void init()
     {
         clock_mq.init();
         note_mq.init();
+        control_mq.init();
     }
 
     void task()
@@ -96,6 +103,13 @@ public:
             {
                 auto note_lock_guard = note_mq.lock_guard();
                 note_mq.enqueue(NoteMessage{.note = midi_packet.data0, .on = false});
+                continue;
+            }
+
+            if (midi_packet.cin == MIDICin::control_change)
+            {
+                auto control_lock_guard = control_mq.lock_guard();
+                control_mq.enqueue(ControlMessage{.control_id = midi_packet.data0, .value = midi_packet.data1});
                 continue;
             }
         }

@@ -11,6 +11,5 @@ class ChannelDisplay
 {
 public:
     virtual ~ChannelDisplay() {}
-    // virtual void draw_channel(uint8_t channel, pico_ssd1306::SSD1306 &ssd1306) {}
     virtual void draw_channel(uint8_t channel, DisplayOutput &output) {}
 };
