@@ -3,26 +3,25 @@
 #include "graphics/image.hpp"
 
 template <>
-struct ImageFormatTraits<ImageFormat::GS4_HSB>
+struct ImageFormatTraits<ImageFormat::GS4_HMSB>
 {
     using data_t = uint8_t;
     static constexpr ImagePxRatio px_ratio{1, 2};
     static constexpr uint8_t max_contrast{0xF};
 };
 
-// Specialize for GS4_HSB
 template <size_t width_, size_t height_>
-class Image<ImageFormat::GS4_HSB, width_, height_>
-    : public ImageBase<ImageFormat::GS4_HSB, width_, height_>
+class Image<ImageFormat::GS4_HMSB, width_, height_>
+    : public Image<ImageFormat::GS4_HMSB, width_, height_, Image<ImageFormat::GS4_HMSB, width_, height_>>
 {
 public:
-    using ImageBase<ImageFormat::GS4_HSB, width_, height_>::ImageBase;
+    using Image<
+        ImageFormat::GS4_HMSB, width_, height_,
+        Image<ImageFormat::GS4_HMSB, width_, height_>>::Image;
 
-    ~Image() {}
-
-    uint8_t get_pixel(size_t x, size_t y) const override
+    uint8_t get_pixel(size_t x, size_t y) const
     {
-        auto index = ((Image<ImageFormat::GS4_HSB, width_, height_>::width * y) + x) / 2;
+        auto index = ((Image<ImageFormat::GS4_HMSB, width_, height_>::width * y) + x) / 2;
 
         if (x % 2 == 0)
         {
@@ -34,9 +33,9 @@ public:
         }
     }
 
-    void set_pixel(size_t x, size_t y, uint8_t value) override
+    void set_pixel(size_t x, size_t y, uint8_t value)
     {
-        auto index = ((Image<ImageFormat::GS4_HSB, width_, height_>::width * y) + x) / 2;
+        auto index = ((Image<ImageFormat::GS4_HMSB, width_, height_>::width * y) + x) / 2;
 
         if (x % 2 == 0)
         {

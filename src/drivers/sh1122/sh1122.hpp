@@ -55,7 +55,7 @@ class SH1122Driver
     spi_inst *spi;
 
 public:
-    Image<ImageFormat::GS4_HSB, width, height> frame_buffer{};
+    Image<ImageFormat::GS4_HMSB, width, height> frame_buffer{};
 
     SH1122Driver(spi_inst *spi)
         : spi{spi}
