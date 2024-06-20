@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Initialise pico_sdk from installed location
@@ -44,6 +44,52 @@ add_subdirectory(vendor/pico-ssd1306)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
+# Add image data
+
+add_library(image_data STATIC
+  build/assets/images/images.cpp
+  build/assets/fonts/fonts.cpp
+  )
+
+target_include_directories(image_data PRIVATE
+  ${CMAKE_CURRENT_LIST_DIR}/src
+)
+
+target_link_libraries(image_data
+  pico_stdlib
+)
+
+# Run image_gs4 generator
+file(GLOB IMAGES ${CMAKE_CURRENT_LIST_DIR}/assets/**/*.png)
+file(GLOB JSON_FONTS ${CMAKE_CURRENT_LIST_DIR}/assets/**/*.json)
+add_custom_command(
+  OUTPUT
+    ${CMAKE_CURRENT_LIST_DIR}/build/assets/images/images.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/build/assets/images/images.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/build/assets/fonts/fonts.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/build/assets/fonts/fonts.cpp
+  COMMAND
+    python ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/tools/image_gs4
+    ${CMAKE_CURRENT_LIST_DIR}/assets
+    ${CMAKE_CURRENT_LIST_DIR}/build/assets
+  DEPENDS
+    ${CMAKE_CURRENT_LIST_DIR}/tools/image_gs4/__main__.py
+    ${IMAGES}
+    ${JSON_FONTS}
+  COMMENT "Running image_gs4"
+)
+
+add_custom_target(
+  image_gs4 ALL
+  DEPENDS
+    ${CMAKE_CURRENT_LIST_DIR}/build/assets/images/images.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/build/assets/images/images.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/build/assets/fonts/fonts.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/build/assets/fonts/fonts.cpp
+)
+
+add_dependencies(image_data image_gs4)
+
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(${PROJECT_NAME}
@@ -66,6 +112,8 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 # Add the standard library to the build
 target_link_libraries(${PROJECT_NAME}
   hardware_i2c
+  hardware_spi
+  image_data
   pico_multicore
   pico_ssd1306
   pico_stdlib
@@ -74,12 +122,11 @@ target_link_libraries(${PROJECT_NAME}
   tinyusb_board
 )
 
-# Add the standard include files to the build
+# Add the include files to the build
 target_include_directories(${PROJECT_NAME} PRIVATE
+  ${CMAKE_CURRENT_LIST_DIR}/build/assets
   ${CMAKE_CURRENT_LIST_DIR}/src
   ${CMAKE_CURRENT_LIST_DIR}/vendor
-  # ${CMAKE_CURRENT_LIST_DIR}/.. # for our common lwipopts or any other standard includes, if required
 )
 
 pico_add_extra_outputs(${PROJECT_NAME})
-

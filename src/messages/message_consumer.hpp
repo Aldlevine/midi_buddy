@@ -2,14 +2,14 @@
 
 #include "concurrent/concurrent.hpp"
 
-template <typename Data>
+template <typename data_t>
 class MessageConsumer
 {
-    MessageQueue<Data> &message_queue;
-    Data *index;
+    MessageQueue<data_t> &message_queue;
+    data_t *index;
 
 public:
-    MessageConsumer(MessageQueue<Data> &message_queue)
+    MessageConsumer(MessageQueue<data_t> &message_queue)
         : message_queue{message_queue}, index{message_queue.head()}
     {
     }
@@ -25,7 +25,7 @@ public:
         return index != message_queue.head();
     }
 
-    bool get_message(Data *message)
+    bool get_message(data_t *message)
     {
         if (has_messages())
         {
@@ -39,7 +39,7 @@ public:
         return false;
     }
 
-    bool get_last_message(Data *message)
+    bool get_last_message(data_t *message)
     {
         if (has_messages())
         {

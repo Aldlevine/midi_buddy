@@ -1,9 +1,8 @@
-#include "channel_displays/channel_displays.hpp"
-#include "concurrent/concurrent.hpp"
-#include "display/display.hpp"
-#include "messages/messages.hpp"
-#include "midi/midi.hpp"
-#include "note_tracker/note_tracker.hpp"
+#include "images/images.hpp"
+#include "fonts/fonts.hpp"
+
+#include "graphics/graphics.hpp"
+#include "drivers/sh1122/sh1122.hpp"
 
 #include "bsp/board.h"
 #include "hardware/i2c.h"
@@ -12,46 +11,65 @@
 
 #include <stdio.h>
 
-auto midi_receiver = MIDIReceiver{};
-auto note_tracker = NoteTracker{midi_receiver.get_note_mq(), 2};
+SH1122Driver<256, 64, 18, 19, 16, 17, 20> sh1122{spi0};
+auto &screen = sh1122.frame_buffer;
 
-auto display_manager = DisplayManager{};
-auto clock_channel_display = ClockChannelDisplay{midi_receiver.get_clock_mq()};
-auto note_channel_display = NoteChannelDisplay{note_tracker};
-auto signal_channel_display = SignalChannelDisplay{};
-auto midi_cc_channel_display = MIDICCChannelDisplay{midi_receiver.get_control_mq(), 1};
-// auto debug_channel_display = DebugChannelDisplay{};
+auto text = RichTextRenderer<
+    decltype(assets::font_5x10),
+    decltype(assets::font_7x10),
+    decltype(assets::font_5x10),
+    decltype(assets::font_7x10)>{
+    .normal_font = assets::font_5x10,
+    .bold_font = assets::font_7x10,
+    .italic_font = assets::font_5x10,
+    .bold_italic_font = assets::font_7x10,
+    .letter_spacing = 1,
+    .line_height = 13,
+};
 
-void secondary_main()
-{
-    while (true)
-    {
-        display_manager.task();
-    }
-}
+const char *string_1 =
+    "[v\x09]\n"
+    "THE [v\x0F]QUICK[/v], [b][v\x04]BROWN[/v][/b] FOX\n"
+    "JUMPED OVER THE [u]LAZY[/u] DOG!\n"
+    "0123456789\n"
+    "~!@#$%^&*()-_=+\n[/v]";
+
+const char *string_2 =
+    "[v\x09]\n"
+    "The [v\x0F]Quick[/v], [b][v\x04]Brown[/v][/b] Fox\n"
+    "Jumped Over The [u]Lazy[/u] Dog...\n"
+    "(((1 * x[[y]) + 234) / 456) ^ 789\n"
+    "[[]{}\\|;:'\",<.>/?\n[/v]";
 
 int main()
 {
     stdio_init_all();
     board_init();
 
-    tusb_init();
-    tud_init(BOARD_TUD_RHPORT);
-
-    display_manager.init();
-    display_manager.set_channel(0, &note_channel_display);
-    display_manager.set_channel(1, &midi_cc_channel_display);
-    display_manager.set_channel(2, &signal_channel_display);
-    display_manager.set_channel(3, &clock_channel_display);
-
-    midi_receiver.init();
-
-    multicore_launch_core1(secondary_main);
+    sh1122.init();
 
     while (true)
     {
-        tud_task();
-        midi_receiver.task();
-        note_tracker.task();
+        for (size_t x = 0; x < 256 - 8; ++x)
+        {
+            screen.clear();
+
+            auto img_contrast = (x * 0xE) / (256 - 8) + 0x1;
+            screen.blit(x, 1, assets::heart, -1, -1, -1, -1, img_contrast);
+            text.blit_string(screen, 0, 1, string_1);
+
+            sh1122.show();
+        }
+
+        for (int16_t x = 256 - 8 - 1; x >= 0; --x)
+        {
+            screen.clear();
+
+            auto img_contrast = (x * 0xE) / (256 - 8) + 0x1;
+            screen.blit(x, 1, assets::star, -1, -1, -1, -1, img_contrast);
+            text.blit_string(screen, 0, 1, string_2);
+
+            sh1122.show();
+        }
     }
 }

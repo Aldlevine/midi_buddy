@@ -2,7 +2,7 @@
 
 using SignalFn = float (*)(float);
 
-template <SignalFn Fn>
+template <SignalFn fn_>
 class SignalGenerator
 {
     uint32_t current_time_millis;
@@ -15,6 +15,6 @@ public:
         current_time_millis = new_time_millis;
         current_t_sec += (diff_time_millis / 1000.0) * frequency_hz;
         current_t_sec -= (uint64_t)current_t_sec;
-        return Fn(current_t_sec);
+        return fn_(current_t_sec);
     }
 };

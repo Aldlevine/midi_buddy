@@ -11,11 +11,11 @@
 #define MESSAGE_QUEUE_SIZE 256
 #define MAX_CONSUMER_COUNT 16
 
-template <typename Data>
+template <typename data_t>
 class MessageQueue
 {
-    std::array<Data, MESSAGE_QUEUE_SIZE> buffer{};
-    Data *head_address = buffer.begin();
+    std::array<data_t, MESSAGE_QUEUE_SIZE> buffer{};
+    data_t *head_address = buffer.begin();
     mutex_t mutex;
 
 public:
@@ -24,22 +24,22 @@ public:
         mutex_init(&mutex);
     }
 
-    Data *begin()
+    data_t *begin()
     {
         return buffer.begin();
     }
 
-    Data *end()
+    data_t *end()
     {
         return buffer.end();
     }
 
-    Data *head() const
+    data_t *head() const
     {
         return head_address;
     }
 
-    void enqueue(Data data)
+    void enqueue(data_t data)
     {
         *head_address = data;
         if (++head_address == buffer.end())
@@ -53,7 +53,7 @@ public:
         return LockGuard{mutex};
     }
 
-    Data operator[](size_t index) const
+    data_t operator[](size_t index) const
     {
         return buffer[index];
     }
