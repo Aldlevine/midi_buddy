@@ -2,6 +2,7 @@
 
 #include "graphics/graphics.hpp"
 
+#include <hardware/dma.h>
 #include <hardware/gpio.h>
 #include <hardware/spi.h>
 #include <pico/stdlib.h>
@@ -53,9 +54,15 @@ class SH1122Driver
     static constexpr auto rst = rst_;
 
     spi_inst *spi;
+    uint bd;
 
 public:
-    Image<ImageFormat::GS4_HMSB, width, height> frame_buffer{};
+    using frame_buffer_t = Image<ImageFormat::GS4_HMSB, width, height>;
+
+    std::array<frame_buffer_t, 2> frame_buffers;
+    size_t front_buffer_idx = 0;
+    uint8_t dma_channel = 0;
+    dma_channel_config dma_config;
 
     SH1122Driver(spi_inst *spi)
         : spi{spi}
@@ -64,8 +71,14 @@ public:
 
     void init()
     {
-        spi_init(spi, 10000000);
-        spi_set_format(spi, 8, spi_cpol_t::SPI_CPOL_0, spi_cpha_t::SPI_CPHA_0, SPI_MSB_FIRST);
+
+        spi_init(spi, 32500000);
+        spi_set_format(spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+
+        dma_channel = dma_claim_unused_channel(true);
+        dma_config = dma_channel_get_default_config(dma_channel);
+        channel_config_set_transfer_data_size(&dma_config, DMA_SIZE_8);
+        channel_config_set_dreq(&dma_config, spi_get_dreq(spi, true));
 
         gpio_init(dc);
         gpio_init(cs);
@@ -85,15 +98,15 @@ public:
         write_cmd(+SH1122Commands::set_display_clock_div, 0xF0);
         write_cmd(+SH1122Commands::set_display_offset, 0x20);
         write_cmd(+SH1122Commands::set_start_line);
-        write_cmd(+SH1122Commands::charge_pump, 0x81);
+        write_cmd(+SH1122Commands::charge_pump, 0x8F);
         write_cmd(+SH1122Commands::segment_remap);
         write_cmd(+SH1122Commands::com_scan_dir);
         write_cmd(+SH1122Commands::set_contrast, 0x44);
         write_cmd(+SH1122Commands::set_multiplex, 0x3F);
         write_cmd(+SH1122Commands::set_precharge, 0x81);
-        write_cmd(+SH1122Commands::set_vcom_deselect, 0x20);
+        write_cmd(+SH1122Commands::set_vcom_deselect, 0x00);
         write_cmd(+SH1122Commands::set_vsegm, 0x00);
-        write_cmd(+SH1122Commands::set_discharge_vsl + 0x00);
+        write_cmd(+SH1122Commands::set_discharge_vsl + 0x06);
         write_cmd(+SH1122Commands::display_all_on_resume);
         write_cmd(+SH1122Commands::normal_display);
         write_cmd(+SH1122Commands::display_on);
@@ -101,8 +114,24 @@ public:
         deselect_device();
     }
 
-    void show()
+    frame_buffer_t &get_front_buffer()
     {
+        return frame_buffers[front_buffer_idx];
+    }
+
+    frame_buffer_t &get_back_buffer()
+    {
+        return frame_buffers[(front_buffer_idx + 1) % frame_buffers.size()];
+    }
+
+    void swap_buffers()
+    {
+        if (dma_channel_is_busy(dma_channel))
+        {
+            dma_channel_wait_for_finish_blocking(dma_channel);
+        }
+
+        deselect_device();
         select_device();
 
         set_cmd_mode();
@@ -110,9 +139,15 @@ public:
         write_cmd(0x00, 0x10); // reset to column 0
 
         set_data_mode();
-        write_data(frame_buffer.get_buffer().data(), frame_buffer.get_buffer().size());
+        dma_channel_configure(
+            dma_channel,
+            &dma_config,
+            &spi_get_hw(spi)->dr,
+            get_back_buffer().get_buffer().data(),
+            get_back_buffer().get_buffer().size(),
+            true);
 
-        deselect_device();
+        front_buffer_idx = (front_buffer_idx + 1) % frame_buffers.size();
     }
 
 private:
@@ -150,6 +185,7 @@ private:
     void write_data(const uint8_t *data, size_t len)
     {
         spi_write_blocking(spi, data, len);
+        return;
     }
 };
 
