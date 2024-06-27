@@ -111,6 +111,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 
 # Add the standard library to the build
 target_link_libraries(${PROJECT_NAME}
+  hardware_dma
   hardware_i2c
   hardware_spi
   image_data
