@@ -19,7 +19,7 @@ struct RichTextRenderer
         bool bold = false;
         bool italic = false;
         bool underline = false;
-        normal_font_t::image_t::data_t value = normal_font_t::image_t::max_contrast;
+        normal_font_t::image_t::data_t value = normal_font_t::image_t::max_value;
     };
 
     using tag_stack_t = std::array<Tag, 32>;
@@ -37,8 +37,13 @@ struct RichTextRenderer
     tag_stack_t tag_stack{};
     Tag *head = tag_stack.begin();
 
-    template <typename image_>
-    void blit_string(image_ &dst, size_t dst_x, size_t dst_y, const char *str)
+    template <is_image image_>
+    void draw_string(
+        image_ &dst,
+        size_t dst_x,
+        size_t dst_y,
+        const char *str,
+        image_::blend_mode_t blend_mode = {})
     {
 
         if (!process_tag_and_move(str))
@@ -66,7 +71,7 @@ struct RichTextRenderer
 
             if (ch > ' ')
             {
-                GlyphRect glyph_rect = blit_glyph(dst, dst_x, dst_y, ch);
+                GlyphRect glyph_rect = draw_glyph(dst, dst_x, dst_y, ch, blend_mode);
                 dst_x += glyph_rect.w + letter_spacing;
                 continue;
             }
@@ -74,36 +79,41 @@ struct RichTextRenderer
     }
 
 private:
-    auto blit_glyph(auto &dst, size_t dst_x, size_t dst_y, uint8_t ch)
+    auto draw_glyph(
+        auto &dst,
+        size_t dst_x,
+        size_t dst_y,
+        uint8_t ch,
+        normal_font_t::image_t::blend_mode_t blend_mode = {})
     {
         const auto value = get_value();
         GlyphRect glyph_rect;
 
         if (head->bold && head->italic)
         {
-            glyph_rect = bold_italic_font.blit_glyph(dst, dst_x, dst_y, ch, value);
+            glyph_rect = bold_italic_font.draw_glyph(dst, dst_x, dst_y, ch, value, blend_mode);
         }
 
         else if (head->bold)
         {
-            glyph_rect = bold_font.blit_glyph(dst, dst_x, dst_y, ch, value);
+            glyph_rect = bold_font.draw_glyph(dst, dst_x, dst_y, ch, value, blend_mode);
         }
 
         else if (head->italic)
         {
-            glyph_rect = italic_font.blit_glyph(dst, dst_x, dst_y, ch, value);
+            glyph_rect = italic_font.draw_glyph(dst, dst_x, dst_y, ch, value, blend_mode);
         }
 
         else
         {
-            glyph_rect = normal_font.blit_glyph(dst, dst_x, dst_y, ch, value);
+            glyph_rect = normal_font.draw_glyph(dst, dst_x, dst_y, ch, value, blend_mode);
         }
 
         if (head->underline)
         {
             for (size_t x = dst_x + glyph_rect.offs_x - 1; x < dst_x + glyph_rect.offs_x + glyph_rect.w + letter_spacing; ++x)
             {
-                dst.set_pixel(x, dst_y + underline_height, value);
+                dst.set_pixel(x, dst_y + underline_height, value, blend_mode);
             }
         }
 

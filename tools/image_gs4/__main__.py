@@ -87,7 +87,7 @@ def make_image_decl(
     if font_json:
         name += "_image"
     decl_file.write(
-        f"extern const Image<ImageFormat::GS4_HSB, {img.width}, {img.height}> {name};\n"
+        f"extern const Image<ImageFormat::GS4_HMSB, {img.width}, {img.height}> {name};\n"
     )
 
 
@@ -109,7 +109,7 @@ def make_image_impl(
         pixel_data.append(byte)
 
     impl_file.write(
-        f"const Image<ImageFormat::GS4_HSB, {img.width}, {img.height}> {name}{{"
+        f"const Image<ImageFormat::GS4_HMSB, {img.width}, {img.height}> {name}{{"
     )
     for i, byte in enumerate(pixel_data):
         if i % (img.width // 2) == 0:
@@ -165,7 +165,7 @@ def make_font_decl(decl_file: TextIOWrapper, font_path: str) -> None:
     img = load_image(image_path)
     name = pathlib.PurePath(font_path).stem
     decl_file.write(
-        f"extern const Font<Image<ImageFormat::GS4_HSB, {img.width}, {img.height}>> {name};\n"
+        f"extern const Font<Image<ImageFormat::GS4_HMSB, {img.width}, {img.height}>> {name};\n"
     )
 
 
@@ -179,7 +179,7 @@ def make_font_impl(impl_file: TextIOWrapper, font_path: str) -> None:
     name = pathlib.PurePath(font_path).stem
 
     impl_file.write(
-        f"const Font<Image<ImageFormat::GS4_HSB, {img.width}, {img.height}>> {name} {{\n"
+        f"const Font<Image<ImageFormat::GS4_HMSB, {img.width}, {img.height}>> {name} {{\n"
     )
 
     impl_file.write(f"    .image = {name}_image,\n")

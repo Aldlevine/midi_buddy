@@ -63,10 +63,11 @@ struct Font
     }();
 
     template <is_image dst_image_>
-    const GlyphRect &blit_glyph(
+    const GlyphRect &draw_glyph(
         dst_image_ &dst,
         size_t dst_x, size_t dst_y, uint8_t ch,
-        size_t contrast = image_t::max_contrast) const
+        size_t value = image_t::max_value,
+        image_t::blend_mode_t blend_mode = {}) const
     {
         const auto &glyph_rect = glyph_rect_map.get_glyph_rect(ch);
         dst.blit(
@@ -77,7 +78,8 @@ struct Font
             glyph_rect.y,
             glyph_rect.w,
             glyph_rect.h,
-            contrast);
+            value,
+            blend_mode);
         return glyph_rect;
     }
 };

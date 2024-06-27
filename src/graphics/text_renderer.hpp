@@ -16,7 +16,13 @@ struct TextRenderer
     const size_t line_height = font.height + 1;
 
     template <is_image image_>
-    void blit_string(image_ &dst, size_t dst_x, size_t dst_y, const char *str, size_t contrast = font_t::image_t::max_contrast)
+    void draw_string(
+        image_ &dst,
+        size_t dst_x,
+        size_t dst_y,
+        const char *str,
+        size_t value = font_t::image_t::max_value,
+        font_t::image_t::blend_mode_t blend_mode = {})
     {
         auto start_x = dst_x;
         for (auto ch_ptr = reinterpret_cast<const uint8_t *>(str); *ch_ptr != '\0'; ++ch_ptr)
@@ -38,7 +44,7 @@ struct TextRenderer
 
             if (ch > ' ')
             {
-                GlyphRect glyph_rect = font.blit_glyph(dst, dst_x, dst_y, ch);
+                GlyphRect glyph_rect = font.draw_glyph(dst, dst_x, dst_y, ch, value, blend_mode);
                 dst_x += glyph_rect.w + letter_spacing;
                 continue;
             }
